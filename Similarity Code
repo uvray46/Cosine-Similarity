@@ -1,0 +1,90 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+%matplotlib inline
+plt.style.use('ggplot')
+from scipy import spatial
+from sklearn.metrics.pairwise import cosine_similarity
+from mpl_toolkits.mplot3d import Axes3D
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+
+# Load the distance dataset into a dataframe
+file_path = r'C:\Users\jwhit\OneDrive\Documents\Data Science Course\Cosine Similarity\distance_dataset (1).csv'
+df = pd.read_csv(file_path, index_col=0)
+
+# Inspect the dataset
+print(df.info())       # Check the column names and data types
+print(df.isnull().sum()) # Check for missing values
+print(df.head())       # Display the first few rows
+
+# Create 2D matrix with 'Y' and 'Z' columns
+matYZ = df[['Y', 'Z']].to_numpy()
+
+# Create 3D matrix with 'X', 'Y', and 'Z' columns
+mat = df[['X', 'Y', 'Z']].to_numpy()
+
+# Calculate the cosine similarity for the 2D matrix with reference plane [5,5]
+simCosine = 1. - cosine_similarity(matYZ, [[5, 5]])
+
+# Calculate the cosine similarity for the 3D matrix with reference plane [5,5,5]
+simCosine3D = 1. - cosine_similarity(mat, [[5, 5, 5]])
+
+# Plotting Cosine Similarity for the 2D matrix (YZ plane)
+figCosine = plt.figure(figsize=[10,8])
+plt.scatter(df.Y, df.Z, c=simCosine[:,0], s=20)
+plt.plot([0,5], [0,5], '--', color='dimgray')  # Reference line [0, 5]
+plt.plot([0,3], [0,7.2], '--', color='dimgray')  # Another reference line
+plt.text(0.7, 2.6, r'$\theta$ = 22.4 deg.', rotation=47, size=14)  # Annotating the plot
+plt.ylim([0, 10])
+plt.xlim([0, 10])
+plt.xlabel('Y', size=14)
+plt.ylabel('Z', size=14)
+plt.title('Cosine Similarity in Y-Z plane')
+cb = plt.colorbar()
+cb.set_label('Similarity with (5,5)', size=14)
+
+# Plotting Cosine Similarity for the 3D matrix (XYZ plane)
+figCosine3D = plt.figure(figsize=(10, 8))
+ax = figCosine3D.add_subplot(111, projection='3d')
+p = ax.scatter(mat[:,0], mat[:,1], mat[:,2], c=simCosine3D[:,0])
+ax.set_xlabel('X', size=12)
+ax.set_ylabel('Y', size=12)
+ax.set_zlabel('Z', size=12)
+cb = figCosine3D.colorbar(p)
+cb.set_label('Similarity with (5,5,5)', size=14)
+
+figCosine3D.tight_layout()
+plt.show()
+
+# Text analysis with CountVectorizer
+# Replace the sentences with your own paragraphs or sentences
+Document1 = "Artificial Intelligence is transforming the world with its ability to learn and adapt."
+Document2 = "Machine learning, a subset of AI, allows systems to automatically improve from experience."
+
+# Combine the documents into a corpus
+corpus = [Document1, Document2]
+
+# Apply CountVectorizer to the corpus
+count_vect = CountVectorizer()
+X_train_counts = count_vect.fit_transform(corpus)
+
+# Convert vector counts to a DataFrame
+print("\nCount Vectorizer Result:\n")
+count_df = pd.DataFrame(X_train_counts.toarray(), columns=count_vect.get_feature_names_out(), index=['Document 0', 'Document 1'])
+print(count_df)
+
+# Apply TF-IDF to the corpus
+vectorizer = TfidfVectorizer()
+trsfm = vectorizer.fit_transform(corpus)
+
+# Convert TF-IDF vectors to a DataFrame
+print("\nTF-IDF Vectorizer Result:\n")
+tfidf_df = pd.DataFrame(trsfm.toarray(), columns=vectorizer.get_feature_names_out(), index=['Document 0', 'Document 1'])
+print(tfidf_df)
+
+# Calculate cosine similarity between the sentences
+print("\nCosine Similarity Result:\n")
+cosine_sim = cosine_similarity(trsfm[0:1], trsfm)
+cosine_sim_df = pd.DataFrame(cosine_sim, index=['Document 0'], columns=['Document 0', 'Document 1'])
+print(cosine_sim_df)
